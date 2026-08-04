@@ -1,12 +1,12 @@
 {
-  "name": "Print Ledger",
-  "short_name": "Print Ledger",
-  "description": "Sales and expense tracker for a 3D printing business",
+  "name": "Spool Ledger",
+  "short_name": "Spool Ledger",
+  "description": "Sales & expense tracker for a small 3D printing business (MVR)",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#181B20",
-  "theme_color": "#181B20",
+  "background_color": "#14161b",
+  "theme_color": "#14161b",
   "orientation": "portrait",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },

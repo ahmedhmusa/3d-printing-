@@ -1,275 +1,743 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#181B20" />
-<title>Print Ledger</title>
-<link rel="manifest" href="./manifest.json" />
-<link rel="apple-touch-icon" href="./icon-192.png" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Print Ledger" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>Spool Ledger</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#14161b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Spool Ledger">
+<meta name="description" content="Sales & expense tracker for a small 3D printing business (MVR)">
 <style>
-  :root{
-    --ink:#EDE9DF; --bg:#181B20; --surface:#20242B; --surface2:#2A2F38;
-    --line:#343A45; --filament:#FF6A3D; --teal:#3FBFA6; --coral:#E8626B; --muted:#8A8F98;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;}
-  .mono{font-family:'JetBrains Mono',monospace;}
-  input,select,button{font-family:'Inter',system-ui,sans-serif;}
-  ::selection{background:#FF6A3D55;}
-  #app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:120px;}
-  .header{padding:28px 20px 16px;}
-  .eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:4px;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase;}
-  h1{font-size:24px;font-weight:700;letter-spacing:-0.02em;margin:0;}
-  .layerlines{height:10px;background-image:repeating-linear-gradient(180deg,#FF6A3D99 0px,#FF6A3D00 1px,#FF6A3D00 3px);}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin:20px;}
-  .cardhead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;}
-  .label{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
-  select.filter{background:var(--surface2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;}
-  .net{font-size:38px;font-weight:700;letter-spacing:-0.02em;margin-bottom:20px;}
-  .stats{display:flex;gap:12px;}
-  .stat{flex:1;background:var(--surface2);border-radius:12px;padding:12px;}
-  .stat .row{display:flex;align-items:center;gap:6px;margin-bottom:4px;color:var(--muted);font-size:12px;}
-  .stat .amt{font-size:18px;font-weight:600;}
-  .section{padding:0 20px;}
-  .count{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
-  .empty{border:1px dashed var(--line);border-radius:16px;padding:32px 20px;text-align:center;color:var(--muted);font-size:14px;}
-  .entry{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:8px;}
-  .bar{width:6px;align-self:stretch;border-radius:99px;flex-shrink:0;}
-  .entry .info{flex:1;min-width:0;}
-  .entry .desc{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .entry .meta{font-size:12px;color:var(--muted);margin-top:2px;}
-  .entry .amt{font-size:14px;font-weight:600;flex-shrink:0;}
-  .entry button{background:none;border:none;color:var(--muted);padding:6px;cursor:pointer;flex-shrink:0;}
-  .fabbar{position:fixed;bottom:0;left:0;right:0;padding:32px 20px 24px;background:linear-gradient(180deg, transparent, var(--bg) 40%);}
-  .fabbar-inner{max-width:480px;margin:0 auto;display:flex;gap:12px;}
-  .fab{flex:1;border:none;border-radius:12px;padding:14px;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;}
-  .fab.sale{background:var(--teal);color:#0E1512;}
-  .fab.expense{background:var(--coral);color:#1A0E0F;}
-  .errbox{margin:12px 20px 0;padding:8px 12px;border-radius:8px;font-size:12px;background:#E8626B22;color:var(--coral);}
-  #sheetOverlay{position:fixed;inset:0;background:#0A0C0FCC;display:none;align-items:flex-end;justify-content:center;z-index:20;}
-  #sheetOverlay.open{display:flex;}
-  .sheet{width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:20px;}
-  .sheethead{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
-  .sheettitle{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
-  .dot{width:8px;height:8px;border-radius:99px;}
-  .sheet button.close{background:none;border:none;color:var(--muted);cursor:pointer;}
-  .field label{display:block;margin-bottom:6px;}
-  .amtrow{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
-  .amtrow span{font-size:24px;color:var(--muted);}
-  .amtrow input{font-size:24px;font-weight:700;background:transparent;border:none;color:var(--ink);outline:none;flex:1;}
-  .tinput{width:100%;border-radius:8px;padding:10px 12px;font-size:14px;background:var(--surface2);border:1px solid var(--line);color:var(--ink);outline:none;margin-bottom:16px;}
-  .savebtn{width:100%;border:none;border-radius:12px;padding:14px;font-weight:600;font-size:14px;cursor:pointer;}
-  .savebtn:disabled{opacity:.4;cursor:default;}
-  svg{display:block;}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+:root{
+  --bg:#14161b;
+  --surface:#1c1f26;
+  --surface-2:#242830;
+  --border:#2e323c;
+  --text:#f2f1ed;
+  --text-muted:#9195a0;
+  --orange:#ff6b35;
+  --teal:#2ec4b6;
+  --success:#4caf7d;
+  --danger:#e85d5d;
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  overscroll-behavior-y:none;
+  -webkit-font-smoothing:antialiased;
+}
+
+#app{
+  max-width:480px;
+  margin:0 auto;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
+
+/* ---------- Topbar ---------- */
+.topbar{
+  padding:calc(env(safe-area-inset-top) + 18px) 20px 14px;
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  border-bottom:1px solid var(--border);
+  background:var(--bg);
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.topbar .brand{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:19px;
+  letter-spacing:-0.01em;
+}
+.topbar .brand span{color:var(--orange);}
+.topbar .subtitle{
+  font-size:11px;
+  color:var(--text-muted);
+  font-family:var(--font-mono);
+  letter-spacing:0.02em;
+}
+
+/* ---------- Main ---------- */
+main{
+  flex:1;
+  padding:18px 16px calc(96px + env(safe-area-inset-bottom));
+  animation:fadein .22s ease;
+}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.section-label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--text-muted);
+  margin:22px 4px 10px;
+}
+.section-label:first-child{margin-top:0;}
+
+/* ---------- Gauge card ---------- */
+.gauge-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:22px 20px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+.gauge-wrap{position:relative;width:112px;height:112px;flex-shrink:0;}
+.gauge-wrap svg{transform:rotate(-90deg);}
+.gauge-center{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.gauge-center .label{font-size:9px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;}
+.gauge-center .pct{font-family:var(--font-mono);font-weight:700;font-size:20px;margin-top:2px;}
+
+.gauge-figures{flex:1;min-width:0;}
+.gauge-figures .month{font-family:var(--font-display);font-weight:600;font-size:15px;margin-bottom:10px;}
+.figure-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;}
+.figure-row .k{font-size:12px;color:var(--text-muted);}
+.figure-row .v{font-family:var(--font-mono);font-weight:600;font-size:14px;}
+.v.pos{color:var(--success);}
+.v.neg{color:var(--danger);}
+
+/* ---------- Quick actions ---------- */
+.quick-actions{display:flex;gap:10px;margin-top:16px;}
+.qa-btn{
+  flex:1;
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:16px;
+  padding:16px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:var(--text);
+  font-family:var(--font-body);
+  font-weight:600;
+  font-size:13px;
+  cursor:pointer;
+}
+.qa-btn.sale{border-color:rgba(255,107,53,0.35);}
+.qa-btn.expense{border-color:rgba(46,196,182,0.35);}
+.qa-btn .qa-icon{
+  width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
+.qa-btn.sale .qa-icon{background:rgba(255,107,53,0.14);color:var(--orange);}
+.qa-btn.expense .qa-icon{background:rgba(46,196,182,0.14);color:var(--teal);}
+
+/* ---------- Category bars ---------- */
+.cat-list{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:6px 16px;}
+.cat-row{padding:12px 0;border-bottom:1px solid var(--border);}
+.cat-row:last-child{border-bottom:none;}
+.cat-row-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px;}
+.cat-row-top .name{font-weight:500;}
+.cat-row-top .amt{font-family:var(--font-mono);color:var(--text-muted);}
+.cat-bar-track{height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden;}
+.cat-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--orange),#ffb37a);}
+.empty-note{color:var(--text-muted);font-size:13px;text-align:center;padding:18px 8px;}
+
+/* ---------- Forms ---------- */
+.form-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:7px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.04em;}
+.field input, .field select{
+  width:100%;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:13px 14px;
+  color:var(--text);
+  font-family:var(--font-body);
+  font-size:15px;
+  appearance:none;
+  -webkit-appearance:none;
+}
+.field select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239195a0' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  padding-right:36px;
+}
+.field input:focus, .field select:focus{outline:2px solid var(--orange);outline-offset:0;}
+.row-2{display:flex;gap:12px;}
+.row-2 .field{flex:1;}
+
+.total-preview{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--surface-2);border-radius:12px;padding:14px 16px;margin-bottom:16px;
+}
+.total-preview .k{font-size:12px;color:var(--text-muted);}
+.total-preview .v{font-family:var(--font-mono);font-weight:700;font-size:18px;}
+
+.submit-btn{
+  width:100%;
+  border:none;
+  border-radius:14px;
+  padding:15px;
+  font-family:var(--font-body);
+  font-weight:600;
+  font-size:15px;
+  color:#14161b;
+  cursor:pointer;
+}
+.submit-btn.sale{background:var(--orange);}
+.submit-btn.expense{background:var(--teal);}
+
+.toast{
+  position:fixed;
+  bottom:calc(96px + env(safe-area-inset-bottom));
+  left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  color:var(--text);
+  padding:10px 18px;
+  border-radius:30px;
+  font-size:13px;
+  opacity:0;
+  transition:opacity .2s ease, transform .2s ease;
+  pointer-events:none;
+  z-index:50;
+  max-width:calc(480px - 40px);
+  text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ---------- History ---------- */
+.filter-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.filter-tabs button{
+  flex:1;
+  padding:9px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text-muted);
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+}
+.filter-tabs button.active{background:var(--surface-2);color:var(--text);border-color:var(--orange);}
+
+.entry{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:13px 14px;
+  margin-bottom:10px;
+}
+.entry .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.entry.sale .dot{background:var(--orange);}
+.entry.expense .dot{background:var(--teal);}
+.entry .body{flex:1;min-width:0;}
+.entry .name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.entry .meta{font-size:12px;color:var(--text-muted);margin-top:2px;}
+.entry .amt-wrap{text-align:right;flex-shrink:0;}
+.entry .amt{font-family:var(--font-mono);font-weight:700;font-size:14px;}
+.entry.sale .amt{color:var(--success);}
+.entry.expense .amt{color:var(--danger);}
+.entry .del{
+  background:none;border:none;color:var(--text-muted);
+  font-size:11px;margin-top:3px;cursor:pointer;padding:2px 0;
+  font-family:var(--font-mono);
+}
+.entry .del:active{color:var(--danger);}
+
+/* ---------- Tab bar ---------- */
+.tabbar{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  max-width:480px;
+  margin:0 auto;
+  background:rgba(28,31,38,0.92);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+  display:flex;
+  padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  z-index:20;
+}
+.tab-btn{
+  flex:1;
+  background:none;border:none;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:6px 2px;
+  color:var(--text-muted);
+  font-family:var(--font-body);
+  font-size:10.5px;
+  font-weight:600;
+  cursor:pointer;
+}
+.tab-btn.active{color:var(--orange);}
+.tab-btn svg{width:22px;height:22px;}
+
+::-webkit-scrollbar{display:none;}
 </style>
 </head>
 <body>
-<div id="app"></div>
-
-<div id="sheetOverlay">
-  <div class="sheet">
-    <div class="sheethead">
-      <div class="sheettitle"><span class="dot" id="sheetDot"></span><span id="sheetTitle">New sale</span></div>
-      <button class="close" id="sheetClose">✕</button>
+<div id="app">
+  <div class="topbar">
+    <div>
+      <div class="brand">Spool<span>Ledger</span></div>
+      <div class="subtitle">SALES &amp; EXPENSES · MVR · SAVED ON THIS DEVICE</div>
     </div>
-    <div class="field">
-      <label class="label">Amount</label>
-      <div class="amtrow"><span>$</span><input id="fAmount" inputmode="decimal" placeholder="0.00" /></div>
-    </div>
-    <div class="field">
-      <label class="label" id="fDescLabel">Description</label>
-      <input class="tinput" id="fDesc" placeholder="" />
-    </div>
-    <div class="field">
-      <label class="label" id="fCatLabel">Category</label>
-      <input class="tinput" id="fCatInput" placeholder="" />
-      <select class="tinput" id="fCatSelect" style="display:none;"></select>
-    </div>
-    <div class="field">
-      <label class="label">Date</label>
-      <input class="tinput" type="date" id="fDate" />
-    </div>
-    <button class="savebtn" id="fSave">Save</button>
   </div>
+  <main id="view"></main>
+  <nav class="tabbar" id="tabbar"></nav>
 </div>
+<div class="toast" id="toast"></div>
 
 <script>
-const COLORS = { teal: "#3FBFA6", coral: "#E8626B", muted: "#8A8F98" };
-const EXPENSE_CATEGORIES = ["Filament","Printer maintenance","Electricity","Packaging & shipping","Marketing","Tools & upgrades","Other"];
-const STORAGE_KEY = "printLedgerEntries";
+(function(){
+"use strict";
+
+// ---------------- Data layer ----------------
+let sales = [];
+let expenses = [];
+let dataReady = false;
+
+const CATS_SALE = ["Keychains","Household Products","Toys","Custom Order","Other"];
+const CATS_EXP = ["Materials (Filament)","Electricity","Printer Maintenance","Packaging","Marketing","Tools/Equipment","Transport","Other"];
+const PAY_METHODS = ["Cash","Bank Transfer","BML","MIB","Other"];
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
-function money(n){ return (Number(n)||0).toLocaleString("en-US",{style:"currency",currency:"USD"}); }
-function monthKey(d){ return d.slice(0,7); }
-function monthLabel(ym){ return new Date(ym+"-01").toLocaleDateString("en-US",{month:"short",year:"numeric"}); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtMVR(n){
+  n = Number(n)||0;
+  return "MVR " + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtDate(d){
+  const dt = new Date(d+"T00:00:00");
+  return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'});
+}
 
-function loadEntries(){
+async function loadData(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  }catch(e){ return []; }
+    const s = localStorage.getItem('spool-ledger-sales');
+    sales = s ? JSON.parse(s) : [];
+  }catch(e){ sales = []; }
+  try{
+    const e = localStorage.getItem('spool-ledger-expenses');
+    expenses = e ? JSON.parse(e) : [];
+  }catch(e){ expenses = []; }
+  dataReady = true;
 }
-function saveEntries(entries){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+async function persistSales(){
+  try{ localStorage.setItem('spool-ledger-sales', JSON.stringify(sales)); }
+  catch(e){ showToast("Couldn't save — storage may be full or disabled"); }
+}
+async function persistExpenses(){
+  try{ localStorage.setItem('spool-ledger-expenses', JSON.stringify(expenses)); }
+  catch(e){ showToast("Couldn't save — storage may be full or disabled"); }
 }
 
-let entries = loadEntries();
-let monthFilter = "all";
-let currentType = "sale";
+// ---------------- Toast ----------------
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
 
-const app = document.getElementById("app");
+// ---------------- Router ----------------
+let currentTab = 'dashboard';
+let historyFilter = 'all';
 
-function render(){
-  const visible = monthFilter === "all" ? entries : entries.filter(e => monthKey(e.date) === monthFilter);
-  const revenue = visible.filter(e=>e.type==="sale").reduce((s,e)=>s+Number(e.amount),0);
-  const expense = visible.filter(e=>e.type==="expense").reduce((s,e)=>s+Number(e.amount),0);
-  const net = revenue - expense;
-  const months = Array.from(new Set(entries.map(e=>monthKey(e.date)))).sort().reverse();
-  const sorted = [...visible].sort((a,b)=> a.date < b.date ? 1 : -1);
+const ICONS = {
+  dashboard: '<path d="M3 11.5L12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" stroke-linecap="round" stroke-linejoin="round"/>',
+  sale: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/>',
+  expense: '<circle cx="12" cy="12" r="9"/><path d="M8 12h8" stroke-linecap="round"/>',
+  history: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2" stroke-linecap="round" stroke-linejoin="round"/>'
+};
+function icon(name){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${ICONS[name]}</svg>`;
+}
 
-  app.innerHTML = `
-    <div class="header">
-      <div class="eyebrow">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${COLORS.muted === undefined ? '#FF6A3D' : '#FF6A3D'}" stroke-width="2.5"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>
-        Print Ledger
-      </div>
-      <h1>Business balance</h1>
-    </div>
-    <div class="layerlines"></div>
+function renderTabbar(){
+  const tabs = [
+    {id:'dashboard', label:'Home', icon:'dashboard'},
+    {id:'add-sale', label:'Add Sale', icon:'sale'},
+    {id:'add-expense', label:'Add Expense', icon:'expense'},
+    {id:'history', label:'History', icon:'history'},
+  ];
+  document.getElementById('tabbar').innerHTML = tabs.map(t=>`
+    <button class="tab-btn ${currentTab===t.id?'active':''}" data-tab="${t.id}">
+      ${icon(t.icon)}
+      <span>${t.label}</span>
+    </button>
+  `).join('');
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.addEventListener('click', ()=>{ currentTab = b.dataset.tab; render(); });
+  });
+}
 
-    <div class="card">
-      <div class="cardhead">
-        <span class="label">Net${monthFilter!=="all" ? " · "+monthLabel(monthFilter) : ""}</span>
-        ${months.length>0 ? `<select class="filter" id="monthSelect">
-          <option value="all" ${monthFilter==="all"?"selected":""}>All time</option>
-          ${months.map(m=>`<option value="${m}" ${monthFilter===m?"selected":""}>${monthLabel(m)}</option>`).join("")}
-        </select>` : ""}
-      </div>
-      <div class="net" style="color:${net>=0?COLORS.teal:COLORS.coral}">${money(net)}</div>
-      <div class="stats">
-        <div class="stat">
-          <div class="row"><span>▲</span><span>Revenue</span></div>
-          <div class="amt" style="color:${COLORS.teal}">${money(revenue)}</div>
+function navigate(tab){ currentTab = tab; render(); }
+
+// ---------------- Computations ----------------
+function monthKey(dateStr){ return dateStr.slice(0,7); } // YYYY-MM
+
+function monthTotals(ym){
+  const s = sales.filter(x=>monthKey(x.date)===ym).reduce((a,x)=>a+x.total,0);
+  const e = expenses.filter(x=>monthKey(x.date)===ym).reduce((a,x)=>a+x.amount,0);
+  return {sales:s, expenses:e, profit:s-e};
+}
+
+function categoryTotals(ym){
+  const totals = {};
+  CATS_SALE.forEach(c=>totals[c]=0);
+  sales.filter(x=>monthKey(x.date)===ym).forEach(x=>{
+    totals[x.category] = (totals[x.category]||0) + x.total;
+  });
+  return totals;
+}
+
+// ---------------- Views ----------------
+function viewDashboard(){
+  const ym = todayStr().slice(0,7);
+  const t = monthTotals(ym);
+  const marginPct = t.sales > 0 ? Math.max(0, Math.min(100, (t.profit/t.sales)*100)) : 0;
+  const circumference = 2*Math.PI*46;
+  const dash = (marginPct/100)*circumference;
+  const monthLabel = new Date(ym+"-01T00:00:00").toLocaleDateString('en-US',{month:'long', year:'numeric'});
+
+  const cats = categoryTotals(ym);
+  const maxCat = Math.max(1, ...Object.values(cats));
+  const catRows = CATS_SALE.filter(c=>cats[c] > 0).sort((a,b)=>cats[b]-cats[a]);
+
+  return `
+    <div class="section-label">This Month</div>
+    <div class="gauge-card">
+      <div class="gauge-wrap">
+        <svg width="112" height="112" viewBox="0 0 112 112">
+          <circle cx="56" cy="56" r="46" stroke="var(--surface-2)" stroke-width="10" fill="none"/>
+          <circle cx="56" cy="56" r="46" stroke="url(#grad)" stroke-width="10" fill="none"
+            stroke-linecap="round"
+            stroke-dasharray="${dash} ${circumference}"/>
+          <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--orange)"/>
+              <stop offset="100%" stop-color="var(--teal)"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="gauge-center">
+          <div class="label">Margin</div>
+          <div class="pct">${t.sales>0 ? Math.round(marginPct)+'%' : '—'}</div>
         </div>
-        <div class="stat">
-          <div class="row"><span>▼</span><span>Expenses</span></div>
-          <div class="amt" style="color:${COLORS.coral}">${money(expense)}</div>
+      </div>
+      <div class="gauge-figures">
+        <div class="month">${monthLabel}</div>
+        <div class="figure-row"><span class="k">Sales</span><span class="v">${fmtMVR(t.sales)}</span></div>
+        <div class="figure-row"><span class="k">Expenses</span><span class="v">${fmtMVR(t.expenses)}</span></div>
+        <div class="figure-row"><span class="k">Profit</span><span class="v ${t.profit>=0?'pos':'neg'}">${fmtMVR(t.profit)}</span></div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="qa-btn sale" data-nav="add-sale">
+        <span class="qa-icon">${icon('sale')}</span>
+        Log a Sale
+      </button>
+      <button class="qa-btn expense" data-nav="add-expense">
+        <span class="qa-icon">${icon('expense')}</span>
+        Log an Expense
+      </button>
+    </div>
+
+    <div class="section-label">Sales by Category</div>
+    ${catRows.length === 0 ? `<div class="cat-list"><div class="empty-note">No sales logged this month yet.</div></div>` : `
+    <div class="cat-list">
+      ${catRows.map(c=>`
+        <div class="cat-row">
+          <div class="cat-row-top"><span class="name">${c}</span><span class="amt">${fmtMVR(cats[c])}</span></div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${Math.round((cats[c]/maxCat)*100)}%"></div></div>
         </div>
+      `).join('')}
+    </div>`}
+  `;
+}
+
+function saleFieldRow(){
+  return `
+    <div class="field">
+      <label>Item</label>
+      <input type="text" id="f-item" placeholder="e.g. Cat keychain" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="f-category">${CATS_SALE.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+    </div>
+    <div class="row-2">
+      <div class="field">
+        <label>Quantity</label>
+        <input type="number" id="f-qty" min="0" step="1" value="1" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label>Unit Price (MVR)</label>
+        <input type="number" id="f-price" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
       </div>
     </div>
-
-    <div class="section">
-      <div class="count">${sorted.length} ${sorted.length===1?"entry":"entries"}</div>
-      ${sorted.length===0 ? `<div class="empty">No entries yet. Log your first sale or expense to start tracking.</div>` :
-        sorted.map(e => `
-          <div class="entry">
-            <div class="bar" style="background:${e.type==="sale"?COLORS.teal:COLORS.coral}"></div>
-            <div class="info">
-              <div class="desc">${escapeHtml(e.description || "(no description)")}</div>
-              <div class="meta">${escapeHtml(e.category)} · ${new Date(e.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
-            </div>
-            <div class="amt" style="color:${e.type==="sale"?COLORS.teal:COLORS.coral}">${e.type==="sale"?"+":"−"}${money(e.amount)}</div>
-            <button data-id="${e.id}" class="del">✕</button>
-          </div>
-        `).join("")
-      }
+    <div class="total-preview">
+      <span class="k">Total</span>
+      <span class="v" id="f-total">MVR 0.00</span>
     </div>
-
-    <div class="fabbar">
-      <div class="fabbar-inner">
-        <button class="fab sale" id="addSale">+ Sale</button>
-        <button class="fab expense" id="addExpense">+ Expense</button>
+    <div class="row-2">
+      <div class="field">
+        <label>Customer (optional)</label>
+        <input type="text" id="f-customer" placeholder="Name" autocomplete="off">
       </div>
+      <div class="field">
+        <label>Payment</label>
+        <select id="f-payment">${PAY_METHODS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="f-date" value="${todayStr()}">
     </div>
   `;
+}
 
-  const ms = document.getElementById("monthSelect");
-  if (ms) ms.addEventListener("change", e => { monthFilter = e.target.value; render(); });
+function viewAddSale(){
+  return `
+    <div class="section-label">Log a Sale</div>
+    <div class="form-card">
+      ${saleFieldRow()}
+      <button class="submit-btn sale" id="submit-sale">Save Sale</button>
+    </div>
+  `;
+}
 
-  document.getElementById("addSale").addEventListener("click", ()=>openSheet("sale"));
-  document.getElementById("addExpense").addEventListener("click", ()=>openSheet("expense"));
-  document.querySelectorAll(".del").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      entries = entries.filter(e=>e.id !== btn.dataset.id);
-      saveEntries(entries);
+function viewAddExpense(){
+  return `
+    <div class="section-label">Log an Expense</div>
+    <div class="form-card">
+      <div class="field">
+        <label>Expense</label>
+        <input type="text" id="f-name" placeholder="e.g. PLA filament 1kg" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="f-category">${CATS_EXP.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+      </div>
+      <div class="field">
+        <label>Amount (MVR)</label>
+        <input type="number" id="f-amount" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Vendor (optional)</label>
+          <input type="text" id="f-vendor" placeholder="Paid to" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>Payment</label>
+          <select id="f-payment">${PAY_METHODS.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="f-date" value="${todayStr()}">
+      </div>
+      <button class="submit-btn expense" id="submit-expense">Save Expense</button>
+    </div>
+  `;
+}
+
+function viewHistory(){
+  let items = [];
+  sales.forEach(x=>items.push({...x, type:'sale'}));
+  expenses.forEach(x=>items.push({...x, type:'expense'}));
+  items.sort((a,b)=> b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+
+  if(historyFilter !== 'all'){
+    items = items.filter(x=>x.type===historyFilter);
+  }
+
+  return `
+    <div class="section-label">History</div>
+    <div class="filter-tabs">
+      <button data-filter="all" class="${historyFilter==='all'?'active':''}">All</button>
+      <button data-filter="sale" class="${historyFilter==='sale'?'active':''}">Sales</button>
+      <button data-filter="expense" class="${historyFilter==='expense'?'active':''}">Expenses</button>
+    </div>
+    ${items.length===0 ? `<div class="empty-note">No entries yet. Log a sale or expense to see it here.</div>` :
+      items.map(x=>{
+        if(x.type==='sale'){
+          return `
+          <div class="entry sale">
+            <div class="dot"></div>
+            <div class="body">
+              <div class="name">${escapeHtml(x.item)}</div>
+              <div class="meta">${fmtDate(x.date)} · ${escapeHtml(x.category)} · ${x.qty} pc${x.qty==1?'':'s'}</div>
+            </div>
+            <div class="amt-wrap">
+              <div class="amt">+${fmtMVR(x.total)}</div>
+              <button class="del" data-del="sale" data-id="${x.id}">Delete</button>
+            </div>
+          </div>`;
+        }else{
+          return `
+          <div class="entry expense">
+            <div class="dot"></div>
+            <div class="body">
+              <div class="name">${escapeHtml(x.name)}</div>
+              <div class="meta">${fmtDate(x.date)} · ${escapeHtml(x.category)}</div>
+            </div>
+            <div class="amt-wrap">
+              <div class="amt">−${fmtMVR(x.amount)}</div>
+              <button class="del" data-del="expense" data-id="${x.id}">Delete</button>
+            </div>
+          </div>`;
+        }
+      }).join('')
+    }
+  `;
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s==null?'':s;
+  return d.innerHTML;
+}
+
+// ---------------- Render + bind ----------------
+function render(){
+  renderTabbar();
+  const view = document.getElementById('view');
+  if(!dataReady){
+    view.innerHTML = `<div class="empty-note">Loading your ledger…</div>`;
+    return;
+  }
+  if(currentTab==='dashboard') view.innerHTML = viewDashboard();
+  else if(currentTab==='add-sale') view.innerHTML = viewAddSale();
+  else if(currentTab==='add-expense') view.innerHTML = viewAddExpense();
+  else if(currentTab==='history') view.innerHTML = viewHistory();
+  bindView();
+  window.scrollTo(0,0);
+}
+
+function bindView(){
+  // dashboard quick actions
+  document.querySelectorAll('[data-nav]').forEach(b=>{
+    b.addEventListener('click', ()=>navigate(b.dataset.nav));
+  });
+
+  // add sale
+  const qty = document.getElementById('f-qty');
+  const price = document.getElementById('f-price');
+  const totalEl = document.getElementById('f-total');
+  function updateTotal(){
+    if(!qty || !price || !totalEl) return;
+    const t = (parseFloat(qty.value)||0) * (parseFloat(price.value)||0);
+    totalEl.textContent = fmtMVR(t);
+  }
+  if(qty && price){
+    qty.addEventListener('input', updateTotal);
+    price.addEventListener('input', updateTotal);
+    updateTotal();
+  }
+  const submitSale = document.getElementById('submit-sale');
+  if(submitSale){
+    submitSale.addEventListener('click', async ()=>{
+      const item = document.getElementById('f-item').value.trim();
+      const category = document.getElementById('f-category').value;
+      const qtyVal = parseFloat(document.getElementById('f-qty').value)||0;
+      const priceVal = parseFloat(document.getElementById('f-price').value)||0;
+      const customer = document.getElementById('f-customer').value.trim();
+      const payment = document.getElementById('f-payment').value;
+      const date = document.getElementById('f-date').value || todayStr();
+      if(!item){ showToast("Add an item name"); return; }
+      if(qtyVal<=0 || priceVal<=0){ showToast("Add quantity and price"); return; }
+      sales.push({
+        id: uid(), date, item, category,
+        qty: qtyVal, price: priceVal, total: qtyVal*priceVal,
+        customer, payment
+      });
+      submitSale.disabled = true;
+      await persistSales();
+      submitSale.disabled = false;
+      showToast("Sale saved ✓");
+      navigate('dashboard');
+    });
+  }
+
+  // add expense
+  const submitExpense = document.getElementById('submit-expense');
+  if(submitExpense){
+    submitExpense.addEventListener('click', async ()=>{
+      const name = document.getElementById('f-name').value.trim();
+      const category = document.getElementById('f-category').value;
+      const amount = parseFloat(document.getElementById('f-amount').value)||0;
+      const vendor = document.getElementById('f-vendor').value.trim();
+      const payment = document.getElementById('f-payment').value;
+      const date = document.getElementById('f-date').value || todayStr();
+      if(!name){ showToast("Add an expense name"); return; }
+      if(amount<=0){ showToast("Add an amount"); return; }
+      expenses.push({
+        id: uid(), date, name, category, amount, vendor, payment
+      });
+      submitExpense.disabled = true;
+      await persistExpenses();
+      submitExpense.disabled = false;
+      showToast("Expense saved ✓");
+      navigate('dashboard');
+    });
+  }
+
+  // history filters
+  document.querySelectorAll('[data-filter]').forEach(b=>{
+    b.addEventListener('click', ()=>{ historyFilter = b.dataset.filter; render(); });
+  });
+
+  // deletes
+  document.querySelectorAll('[data-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      const id = b.dataset.id;
+      if(b.dataset.del === 'sale'){
+        sales = sales.filter(x=>x.id!==id);
+        await persistSales();
+      }else{
+        expenses = expenses.filter(x=>x.id!==id);
+        await persistExpenses();
+      }
+      showToast("Deleted");
       render();
     });
   });
 }
 
-function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-
-const overlay = document.getElementById("sheetOverlay");
-const fAmount = document.getElementById("fAmount");
-const fDesc = document.getElementById("fDesc");
-const fDescLabel = document.getElementById("fDescLabel");
-const fCatLabel = document.getElementById("fCatLabel");
-const fCatInput = document.getElementById("fCatInput");
-const fCatSelect = document.getElementById("fCatSelect");
-const fDate = document.getElementById("fDate");
-const fSave = document.getElementById("fSave");
-const sheetTitle = document.getElementById("sheetTitle");
-const sheetDot = document.getElementById("sheetDot");
-
-fCatSelect.innerHTML = EXPENSE_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
-
-function openSheet(type){
-  currentType = type;
-  const isSale = type === "sale";
-  sheetTitle.textContent = isSale ? "New sale" : "New expense";
-  sheetDot.style.background = isSale ? COLORS.teal : COLORS.coral;
-  fDescLabel.textContent = isSale ? "Description" : "What for";
-  fDesc.placeholder = isSale ? "e.g. Custom minis order — Etsy" : "e.g. eSun PLA 3-pack";
-  fCatLabel.textContent = isSale ? "Category (optional)" : "Category";
-  fCatInput.style.display = isSale ? "block" : "none";
-  fCatSelect.style.display = isSale ? "none" : "block";
-  fCatInput.value = "";
-  fCatInput.placeholder = "e.g. Etsy, local craft fair";
-  fAmount.value = "";
-  fDesc.value = "";
-  fDate.value = new Date().toISOString().slice(0,10);
-  fSave.style.background = isSale ? COLORS.teal : COLORS.coral;
-  fSave.style.color = isSale ? "#0E1512" : "#1A0E0F";
-  overlay.classList.add("open");
-  setTimeout(()=>fAmount.focus(), 50);
-}
-function closeSheet(){ overlay.classList.remove("open"); }
-
-document.getElementById("sheetClose").addEventListener("click", closeSheet);
-overlay.addEventListener("click", (e)=>{ if(e.target === overlay) closeSheet(); });
-
-fSave.addEventListener("click", ()=>{
-  const amt = parseFloat(fAmount.value);
-  if (!amt || amt <= 0) return;
-  const isSale = currentType === "sale";
-  entries = [{
-    id: uid(),
-    type: currentType,
-    amount: amt,
-    description: fDesc.value.trim(),
-    category: isSale ? (fCatInput.value.trim() || "Sale") : fCatSelect.value,
-    date: fDate.value || new Date().toISOString().slice(0,10),
-  }, ...entries];
-  saveEntries(entries);
-  closeSheet();
+// ---------------- Init ----------------
+(async function init(){
+  render(); // show loading state immediately
+  await loadData();
   render();
-});
+})();
 
-render();
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(()=>{});
-  });
-}
+})();
 </script>
 </body>
 </html>
