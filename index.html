@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#181B20" />
+<title>Print Ledger</title>
+<link rel="manifest" href="./manifest.json" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Print Ledger" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#EDE9DF; --bg:#181B20; --surface:#20242B; --surface2:#2A2F38;
+    --line:#343A45; --filament:#FF6A3D; --teal:#3FBFA6; --coral:#E8626B; --muted:#8A8F98;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  input,select,button{font-family:'Inter',system-ui,sans-serif;}
+  ::selection{background:#FF6A3D55;}
+  #app{max-width:480px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:120px;}
+  .header{padding:28px 20px 16px;}
+  .eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:4px;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase;}
+  h1{font-size:24px;font-weight:700;letter-spacing:-0.02em;margin:0;}
+  .layerlines{height:10px;background-image:repeating-linear-gradient(180deg,#FF6A3D99 0px,#FF6A3D00 1px,#FF6A3D00 3px);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin:20px;}
+  .cardhead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;}
+  .label{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  select.filter{background:var(--surface2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;}
+  .net{font-size:38px;font-weight:700;letter-spacing:-0.02em;margin-bottom:20px;}
+  .stats{display:flex;gap:12px;}
+  .stat{flex:1;background:var(--surface2);border-radius:12px;padding:12px;}
+  .stat .row{display:flex;align-items:center;gap:6px;margin-bottom:4px;color:var(--muted);font-size:12px;}
+  .stat .amt{font-size:18px;font-weight:600;}
+  .section{padding:0 20px;}
+  .count{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+  .empty{border:1px dashed var(--line);border-radius:16px;padding:32px 20px;text-align:center;color:var(--muted);font-size:14px;}
+  .entry{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:8px;}
+  .bar{width:6px;align-self:stretch;border-radius:99px;flex-shrink:0;}
+  .entry .info{flex:1;min-width:0;}
+  .entry .desc{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .entry .meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .entry .amt{font-size:14px;font-weight:600;flex-shrink:0;}
+  .entry button{background:none;border:none;color:var(--muted);padding:6px;cursor:pointer;flex-shrink:0;}
+  .fabbar{position:fixed;bottom:0;left:0;right:0;padding:32px 20px 24px;background:linear-gradient(180deg, transparent, var(--bg) 40%);}
+  .fabbar-inner{max-width:480px;margin:0 auto;display:flex;gap:12px;}
+  .fab{flex:1;border:none;border-radius:12px;padding:14px;font-weight:600;font-size:14px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;}
+  .fab.sale{background:var(--teal);color:#0E1512;}
+  .fab.expense{background:var(--coral);color:#1A0E0F;}
+  .errbox{margin:12px 20px 0;padding:8px 12px;border-radius:8px;font-size:12px;background:#E8626B22;color:var(--coral);}
+  #sheetOverlay{position:fixed;inset:0;background:#0A0C0FCC;display:none;align-items:flex-end;justify-content:center;z-index:20;}
+  #sheetOverlay.open{display:flex;}
+  .sheet{width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:20px;}
+  .sheethead{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .sheettitle{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+  .dot{width:8px;height:8px;border-radius:99px;}
+  .sheet button.close{background:none;border:none;color:var(--muted);cursor:pointer;}
+  .field label{display:block;margin-bottom:6px;}
+  .amtrow{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+  .amtrow span{font-size:24px;color:var(--muted);}
+  .amtrow input{font-size:24px;font-weight:700;background:transparent;border:none;color:var(--ink);outline:none;flex:1;}
+  .tinput{width:100%;border-radius:8px;padding:10px 12px;font-size:14px;background:var(--surface2);border:1px solid var(--line);color:var(--ink);outline:none;margin-bottom:16px;}
+  .savebtn{width:100%;border:none;border-radius:12px;padding:14px;font-weight:600;font-size:14px;cursor:pointer;}
+  .savebtn:disabled{opacity:.4;cursor:default;}
+  svg{display:block;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheethead">
+      <div class="sheettitle"><span class="dot" id="sheetDot"></span><span id="sheetTitle">New sale</span></div>
+      <button class="close" id="sheetClose">✕</button>
+    </div>
+    <div class="field">
+      <label class="label">Amount</label>
+      <div class="amtrow"><span>$</span><input id="fAmount" inputmode="decimal" placeholder="0.00" /></div>
+    </div>
+    <div class="field">
+      <label class="label" id="fDescLabel">Description</label>
+      <input class="tinput" id="fDesc" placeholder="" />
+    </div>
+    <div class="field">
+      <label class="label" id="fCatLabel">Category</label>
+      <input class="tinput" id="fCatInput" placeholder="" />
+      <select class="tinput" id="fCatSelect" style="display:none;"></select>
+    </div>
+    <div class="field">
+      <label class="label">Date</label>
+      <input class="tinput" type="date" id="fDate" />
+    </div>
+    <button class="savebtn" id="fSave">Save</button>
+  </div>
+</div>
+
+<script>
+const COLORS = { teal: "#3FBFA6", coral: "#E8626B", muted: "#8A8F98" };
+const EXPENSE_CATEGORIES = ["Filament","Printer maintenance","Electricity","Packaging & shipping","Marketing","Tools & upgrades","Other"];
+const STORAGE_KEY = "printLedgerEntries";
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function money(n){ return (Number(n)||0).toLocaleString("en-US",{style:"currency",currency:"USD"}); }
+function monthKey(d){ return d.slice(0,7); }
+function monthLabel(ym){ return new Date(ym+"-01").toLocaleDateString("en-US",{month:"short",year:"numeric"}); }
+
+function loadEntries(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveEntries(entries){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+let entries = loadEntries();
+let monthFilter = "all";
+let currentType = "sale";
+
+const app = document.getElementById("app");
+
+function render(){
+  const visible = monthFilter === "all" ? entries : entries.filter(e => monthKey(e.date) === monthFilter);
+  const revenue = visible.filter(e=>e.type==="sale").reduce((s,e)=>s+Number(e.amount),0);
+  const expense = visible.filter(e=>e.type==="expense").reduce((s,e)=>s+Number(e.amount),0);
+  const net = revenue - expense;
+  const months = Array.from(new Set(entries.map(e=>monthKey(e.date)))).sort().reverse();
+  const sorted = [...visible].sort((a,b)=> a.date < b.date ? 1 : -1);
+
+  app.innerHTML = `
+    <div class="header">
+      <div class="eyebrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${COLORS.muted === undefined ? '#FF6A3D' : '#FF6A3D'}" stroke-width="2.5"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>
+        Print Ledger
+      </div>
+      <h1>Business balance</h1>
+    </div>
+    <div class="layerlines"></div>
+
+    <div class="card">
+      <div class="cardhead">
+        <span class="label">Net${monthFilter!=="all" ? " · "+monthLabel(monthFilter) : ""}</span>
+        ${months.length>0 ? `<select class="filter" id="monthSelect">
+          <option value="all" ${monthFilter==="all"?"selected":""}>All time</option>
+          ${months.map(m=>`<option value="${m}" ${monthFilter===m?"selected":""}>${monthLabel(m)}</option>`).join("")}
+        </select>` : ""}
+      </div>
+      <div class="net" style="color:${net>=0?COLORS.teal:COLORS.coral}">${money(net)}</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="row"><span>▲</span><span>Revenue</span></div>
+          <div class="amt" style="color:${COLORS.teal}">${money(revenue)}</div>
+        </div>
+        <div class="stat">
+          <div class="row"><span>▼</span><span>Expenses</span></div>
+          <div class="amt" style="color:${COLORS.coral}">${money(expense)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="count">${sorted.length} ${sorted.length===1?"entry":"entries"}</div>
+      ${sorted.length===0 ? `<div class="empty">No entries yet. Log your first sale or expense to start tracking.</div>` :
+        sorted.map(e => `
+          <div class="entry">
+            <div class="bar" style="background:${e.type==="sale"?COLORS.teal:COLORS.coral}"></div>
+            <div class="info">
+              <div class="desc">${escapeHtml(e.description || "(no description)")}</div>
+              <div class="meta">${escapeHtml(e.category)} · ${new Date(e.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>
+            </div>
+            <div class="amt" style="color:${e.type==="sale"?COLORS.teal:COLORS.coral}">${e.type==="sale"?"+":"−"}${money(e.amount)}</div>
+            <button data-id="${e.id}" class="del">✕</button>
+          </div>
+        `).join("")
+      }
+    </div>
+
+    <div class="fabbar">
+      <div class="fabbar-inner">
+        <button class="fab sale" id="addSale">+ Sale</button>
+        <button class="fab expense" id="addExpense">+ Expense</button>
+      </div>
+    </div>
+  `;
+
+  const ms = document.getElementById("monthSelect");
+  if (ms) ms.addEventListener("change", e => { monthFilter = e.target.value; render(); });
+
+  document.getElementById("addSale").addEventListener("click", ()=>openSheet("sale"));
+  document.getElementById("addExpense").addEventListener("click", ()=>openSheet("expense"));
+  document.querySelectorAll(".del").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      entries = entries.filter(e=>e.id !== btn.dataset.id);
+      saveEntries(entries);
+      render();
+    });
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+const overlay = document.getElementById("sheetOverlay");
+const fAmount = document.getElementById("fAmount");
+const fDesc = document.getElementById("fDesc");
+const fDescLabel = document.getElementById("fDescLabel");
+const fCatLabel = document.getElementById("fCatLabel");
+const fCatInput = document.getElementById("fCatInput");
+const fCatSelect = document.getElementById("fCatSelect");
+const fDate = document.getElementById("fDate");
+const fSave = document.getElementById("fSave");
+const sheetTitle = document.getElementById("sheetTitle");
+const sheetDot = document.getElementById("sheetDot");
+
+fCatSelect.innerHTML = EXPENSE_CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join("");
+
+function openSheet(type){
+  currentType = type;
+  const isSale = type === "sale";
+  sheetTitle.textContent = isSale ? "New sale" : "New expense";
+  sheetDot.style.background = isSale ? COLORS.teal : COLORS.coral;
+  fDescLabel.textContent = isSale ? "Description" : "What for";
+  fDesc.placeholder = isSale ? "e.g. Custom minis order — Etsy" : "e.g. eSun PLA 3-pack";
+  fCatLabel.textContent = isSale ? "Category (optional)" : "Category";
+  fCatInput.style.display = isSale ? "block" : "none";
+  fCatSelect.style.display = isSale ? "none" : "block";
+  fCatInput.value = "";
+  fCatInput.placeholder = "e.g. Etsy, local craft fair";
+  fAmount.value = "";
+  fDesc.value = "";
+  fDate.value = new Date().toISOString().slice(0,10);
+  fSave.style.background = isSale ? COLORS.teal : COLORS.coral;
+  fSave.style.color = isSale ? "#0E1512" : "#1A0E0F";
+  overlay.classList.add("open");
+  setTimeout(()=>fAmount.focus(), 50);
+}
+function closeSheet(){ overlay.classList.remove("open"); }
+
+document.getElementById("sheetClose").addEventListener("click", closeSheet);
+overlay.addEventListener("click", (e)=>{ if(e.target === overlay) closeSheet(); });
+
+fSave.addEventListener("click", ()=>{
+  const amt = parseFloat(fAmount.value);
+  if (!amt || amt <= 0) return;
+  const isSale = currentType === "sale";
+  entries = [{
+    id: uid(),
+    type: currentType,
+    amount: amt,
+    description: fDesc.value.trim(),
+    category: isSale ? (fCatInput.value.trim() || "Sale") : fCatSelect.value,
+    date: fDate.value || new Date().toISOString().slice(0,10),
+  }, ...entries];
+  saveEntries(entries);
+  closeSheet();
+  render();
+});
+
+render();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
