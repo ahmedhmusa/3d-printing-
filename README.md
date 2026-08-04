@@ -1,4 +1,4 @@
-# Spool Ledger
+# 3D Printing
 
 A sales &amp; expense tracker for a small 3D printing business, built as a
 static web app. Currency: Maldivian Rufiyaa (MVR). Data saves to the

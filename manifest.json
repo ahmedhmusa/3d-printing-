@@ -1,6 +1,6 @@
 {
-  "name": "Spool Ledger",
-  "short_name": "Spool Ledger",
+  "name": "3D Printing",
+  "short_name": "3D Printing",
   "description": "Sales & expense tracker for a small 3D printing business (MVR)",
   "start_url": "./index.html",
   "scope": "./",
